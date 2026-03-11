@@ -11,6 +11,8 @@ set(MAINS
         cache_oom.cc
         simd.cc
         jit_demo.cc
+        jemalloc_llvm.cc
+        LLJITWithObjectCache.cc
         )
 foreach (src ${MAINS})
     get_filename_component(exe ${src} NAME_WE)

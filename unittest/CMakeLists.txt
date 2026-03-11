@@ -28,6 +28,10 @@ set(TESTS
         test_analysis.cc
         test_memory_leak.cc
         test_llvm.cc
+        test_polymorphism.cc
+        test_german_string.cc
+        cuda_test.cc
+        test_phmap.cc
         )
 foreach (src ${TESTS})
     get_filename_component(exe ${src} NAME_WE)

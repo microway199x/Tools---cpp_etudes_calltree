@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.5)
 set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmakes ${CMAKE_MODULE_PATH})
 cmake_policy(SET CMP0079 NEW)
-cmake_policy(SET CMP0167 OLD)
+#cmake_policy(SET CMP0167 OLD)
 
 project(cpp_etudes)
 #enable_language(CXX)
 #enable_language(C)
 #enable_language(ASM)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -static-libstdc++  -msse4.1 -msse4.2 -mavx2 -mpopcnt -O3 -std=c++17")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -static-libstdc++ -msse4.1 -msse4.2 -mavx2 -g -O0 -std=c++17")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -static-libstdc++  -msse4.1 -msse4.2 -mavx2 -mpopcnt -O3 -std=c++20")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -static-libstdc++ -msse4.1 -msse4.2 -mavx2 -g -O0 -std=c++20")
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS}  -static-libstdc++  -O3 -std=c++17")
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS}  -static-libstdc++ -g -O0 -std=c++17")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
@@ -172,6 +172,7 @@ if (NOT HAVE_GLIBCXX_USE_CXX11_ABI)
     MESSAGE(FATAL_ERROR "_GLIBCXX_USE_CXX11_ABI should not be 0")
 endif()
 find_package(zstd REQUIRED)
+message(STATUS "REQUIRED_LLVM_LIBRARIES=${REQUIRED_LLVM_LIBRARIES}")
 list(APPEND link_libs gtest
         pthread atomic
         gflags
@@ -197,6 +198,14 @@ list(APPEND link_libs gtest
         )
 list(APPEND link_libs curses)
 add_subdirectory(src/modules)
+
+set(JEMALLOC_HOME "${PROJECT_SOURCE_DIR}/third-party/jemalloc-5.2.1")
+add_library(jemalloc STATIC IMPORTED)
+set_target_properties(jemalloc PROPERTIES
+        IMPORTED_LOCATION "${JEMALLOC_HOME}/lib/libjemalloc_pic.a"
+        INTERFACE_INCLUDE_DIRECTORIES "${JEMALLOC_HOME}/include"
+)
+list(PREPEND link_libs jemalloc)
 message(STATUS "link_libs=${link_libs}")
 add_subdirectory(unittest)
 add_subdirectory(benchmark)

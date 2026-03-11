@@ -78,8 +78,8 @@ else
   fi
 fi
 echo git branch -D ${cbr}
-echo git push --force satanson ${cbr0}:${cbr0}
+echo git push --force origin ${cbr0}:${cbr0}
 if [ -n "${notDryRun}" ];then
   git branch -D ${cbr}
-  git push --force satanson ${cbr0}:${cbr0}
+  git push --force origin ${cbr0}:${cbr0}
 fi

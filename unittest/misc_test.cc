@@ -25,6 +25,7 @@
 
 using namespace std;
 class MiscTest : public ::testing::Test {};
+
 namespace abc {
 class MiscTest {};
 } // namespace abc
@@ -158,11 +159,11 @@ struct AAA {
     static inline void apply() { std::cout << "AAA T" << std::endl; }
 };
 template <typename T>
-struct AAA<T, guard::TypeGuard<T, float, double>> {
+struct AAA<T, guard::TypeGuard<T, float, double> > {
     static inline void apply() { std::cout << "AAA float or double" << std::endl; }
 };
 template <typename T>
-struct AAA<T, guard::TypeGuard<T, char, short, long, long long>> {
+struct AAA<T, guard::TypeGuard<T, char, short, long, long long> > {
     static inline void apply() { std::cout << "AAA other int" << std::endl; }
 };
 template <>
@@ -238,15 +239,15 @@ struct FunctorC {
 };
 
 TEST_F(MiscTest, testEvaluate) {
-    auto s = FunctorA<FunctorB<FunctorC>>::evaluate<std::string>("abc", 1, 2);
+    auto s = FunctorA<FunctorB<FunctorC> >::evaluate<std::string>("abc", 1, 2);
     std::cout << s << std::endl;
     const int arg0 = 100;
     const int arg1 = 999;
     const int& arg0_ref = arg0;
     const int& arg1_ref = arg1;
-    auto s1 = FunctorA<FunctorB<FunctorC>>::evaluate<std::string>("abc", arg0, arg1);
+    auto s1 = FunctorA<FunctorB<FunctorC> >::evaluate<std::string>("abc", arg0, arg1);
     std::cout << s1 << std::endl;
-    auto s2 = FunctorA<FunctorB<FunctorC>>::evaluate<std::string>("abc", arg0_ref, arg1_ref);
+    auto s2 = FunctorA<FunctorB<FunctorC> >::evaluate<std::string>("abc", arg0_ref, arg1_ref);
     std::cout << s2 << std::endl;
 }
 
@@ -272,7 +273,7 @@ TYPE_GUARD(IntGuard, is_int, int8_t, int16_t, int32_t, int64_t, int128_t)
 
 template <typename T>
 T mod(T a, T b) {
-    using TT = std::remove_cv_t<std::remove_reference_t<T>>;
+    using TT = std::remove_cv_t<std::remove_reference_t<T> >;
     if constexpr (is_int8_int16<TT>) {
         return TT(fmodf(a, b));
     } else if constexpr (is_int32<TT>) {
@@ -498,14 +499,16 @@ struct Foobar001 {
     }
 };
 using Foobar001Ptr = std::unique_ptr<Foobar001>;
-using Foobar001Vector = std::vector<std::tuple<size_t, Foobar001Ptr>>;
+using Foobar001Vector = std::vector<std::tuple<size_t, Foobar001Ptr> >;
 void put_foobar001(Foobar001Vector& fv, Foobar001Ptr fb) {
     fv.emplace_back(fv.size(), std::move(fb));
 }
 TEST_F(MiscTest, test_unqiue_ptr) {
     Foobar001Vector fv;
     fv.reserve(3);
-    { put_foobar001(fv, std::unique_ptr<Foobar001>(new Foobar001())); }
+    {
+        put_foobar001(fv, std::unique_ptr<Foobar001>(new Foobar001()));
+    }
     std::cout << "here" << std::endl;
     // put_foobar001(fv, std::unique_ptr<Foobar001>(new Foobar001()));
     // put_foobar001(fv, std::unique_ptr<Foobar001>(new Foobar001()));
@@ -805,7 +808,7 @@ TEST_F(MiscTest, TestB1) {
     B1 b1;
 }
 TEST_F(MiscTest, TestUniquePtr) {
-    std::vector<std::unique_ptr<B1>> bs;
+    std::vector<std::unique_ptr<B1> > bs;
     //bs.resize(10);
     for (auto i = 0; i < 10; ++i) {
         bs.push_back(std::make_unique<B1>());
@@ -886,7 +889,7 @@ struct detector {
 };
 
 template <template <typename...> typename Op, typename... Args>
-struct detector<std::void_t<Op<Args...>>, Op, Args...> {
+struct detector<std::void_t<Op<Args...> >, Op, Args...> {
     using value_t = std::true_type;
 };
 
@@ -903,15 +906,35 @@ struct mydeclval_preventor {
     static constexpr bool stop = false;
 };
 template <typename T>
-auto mydeclval() -> decltype(__mydeclval<T>(0)) {
+auto mydeclval() -> decltype(__mydeclval<T>(0L)) {
     static_assert(mydeclval_preventor<T>::stop, "abc");
-    return __mydeclval<T>(0);
+    static_assert(false, "abc");
+    return __mydeclval<T>(0L);
 }
+#if defined(__GNUC__) || defined(__clang__)
+#define NOT_SUPPORT()                                                                                         \
+    do {                                                                                                      \
+        throw std::runtime_error(std::string("ColumnView not support method '") + __PRETTY_FUNCTION__ + "'"); \
+    } while (0);
+#elif defined(_MSC_VER)
+#define NOT_SUPPOR()                                                                                  \
+    do {                                                                                              \
+        throw std::runtime_error(std::string("ColumnView not support method '") + __FUNCSIG__ + "'"); \
+    } while (0);
+#else
+#define NOT_SUPPORT()                                                                              \
+    do {                                                                                           \
+        throw std::runtime_error(std::string("ColumnView not support method '") + __func__ + "'"); \
+    } while (0);
+#endif
 
 namespace test_polymorphic_dispatch {
 class Fish {
 public:
-    void swim() { std::cout << "Fish can swim" << std::endl; }
+    void swim() {
+        NOT_SUPPORT();
+        std::cout << "Fish can swim" << std::endl;
+    }
 };
 class Bird {
 public:
@@ -938,6 +961,26 @@ private:
     T t;
 };
 
+template <typename T>
+class Animal2 {
+public:
+    template <typename S>
+    using can_fly_t = decltype(mydeclval<S>().fly());
+    template <typename S>
+    using can_swim_t = decltype(mydeclval<S>().swim());
+    static constexpr bool can_fly = is_detect<can_fly_t, T>::value;
+    static constexpr bool can_swim = is_detect<can_swim_t, T>::value;
+    void behavior() {
+        if constexpr (requires { t.fly(); }) {
+            t.fly();
+        } else if constexpr (requires { t.swim(); }) {
+            t.swim();
+        }
+    }
+
+private:
+    T t;
+};
 } // namespace test_polymorphic_dispatch
 
 TEST_F(MiscTest, testStaticDispatch) {
@@ -948,10 +991,33 @@ TEST_F(MiscTest, testStaticDispatch) {
     animal1.behavior();
 }
 
+TEST_F(MiscTest, testStaticDispatch2) {
+    namespace tpd = test_polymorphic_dispatch;
+    tpd::Animal2<tpd::Fish> animal0;
+    tpd::Animal2<tpd::Bird> animal1;
+    animal0.behavior();
+    animal1.behavior();
+}
+
+static const char* s = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff";
+struct Slice {
+    char* data;
+    size_t size;
+};
+static const Slice& NULL_SLICE = *reinterpret_cast<const Slice*>(s);
+TEST_F(MiscTest, test_empty_slice) {
+    std::cout << (intptr_t)NULL_SLICE.data << std::endl;
+    std::cout << NULL_SLICE.size << std::endl;
+    if (((intptr_t)NULL_SLICE.data) == -1L) {
+        std::cout << "it is null";
+    }
+}
+
 template <typename DesiredTypeName>
 inline std::string getTypeName() {
     std::string Name = __PRETTY_FUNCTION__;
 
+    std::cout << Name << std::endl;
     std::string Key = "DesiredTypeName = ";
     Name = Name.substr(Name.find(Key));
     assert(!Name.empty() && "Unable to find the template parameter!");
@@ -998,7 +1064,7 @@ template <typename _Tp, typename = void>
 struct my_is_referenceable : public false_type {};
 
 template <typename _Tp>
-struct my_is_referenceable<_Tp, __void_t<_Tp&>> : public true_type {};
+struct my_is_referenceable<_Tp, __void_t<_Tp&> > : public true_type {};
 
 void void_func() {}
 int int_func() {
@@ -1006,7 +1072,7 @@ int int_func() {
 }
 TEST_F(MiscTest, testMeta) {
     static_assert(my_is_referenceable<int>::value, "abc");
-    using a = my_is_referenceable<std::function<void(void)>>;
+    using a = my_is_referenceable<std::function<void(void)> >;
     static_assert(a::value, "abc");
     using b = my_is_referenceable<void>;
     //static_assert(b::value, "abc");
@@ -1172,7 +1238,7 @@ TEST_F(MiscTest, testMul32) {
 #include <thread>
 #include <type_traits>
 
-template <typename T, typename = std::enable_if_t<std::is_copy_assignable<T>::value, T>>
+template <typename T, typename = std::enable_if_t<std::is_copy_assignable<T>::value, T> >
 class TlsObject {
 public:
     TlsObject() { DCHECK(!pthread_key_create(&_key, ::free)); }
@@ -1458,11 +1524,11 @@ TEST_F(MiscTest, testReadValues) {
     double d = 0.0;
     ASSERT_TRUE(read_values("foobar.1", a, b, c, s, d));
     std::cout << a << "," << b << ", " << c << "," << s << "," << d << std::endl;
-    int e =0;
+    int e = 0;
     ASSERT_FALSE(read_values("foobar.1", a, b, c, s, d, e));
 }
-void* func(void*){
-    std::cout<<"ok"<<std::endl;
+void* func(void*) {
+    std::cout << "ok" << std::endl;
 }
 TEST_F(MiscTest, testPthread) {
     pthread_t pid;
@@ -1470,13 +1536,35 @@ TEST_F(MiscTest, testPthread) {
     pthread_attr_init(&pattr);
     pthread_attr_setstack(&pattr, (void*)static_cast<intptr_t>(1), 100);
     auto res = pthread_create(&pid, &pattr, func, NULL);
-    if (res!=0) {
-        std::cout<<"pthread_create: ERROR";
+    if (res != 0) {
+        std::cout << "pthread_create: ERROR";
     }
-    pthread_join(pid,NULL);
+    pthread_join(pid, NULL);
 
     std::set<int64_t> a;
     a.upper_bound(10);
+}
+
+struct UnionStruct {
+    union {
+        uint32_t len;
+        struct {
+            uint32_t len;
+            char str[12];
+        } short_rep;
+        struct {
+            uint32_t len;
+            char prefix[4];
+            uintptr_t ptr;
+        } long_rep;
+    };
+};
+TEST_F(MiscTest, testView) {
+    std::cout << "sizeof=" << sizeof(UnionStruct) << std::endl;
+    UnionStruct a;
+    a.len = 12;
+    memcpy(a.short_rep.str, "hello world", 12);
+    std::cout << "len=" << a.len << ", str=" << a.short_rep.str << std::endl;
 }
 
 int main(int argc, char** argv) {

@@ -9,10 +9,11 @@
 
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <unordered_map>
 
+#include "guard.hh"
 #include "meta_macro.hh"
-#include <cstdint>
 
 #define M_DEF_STMT_1(type, a) type a = 1;
 
@@ -218,8 +219,7 @@ enum type2_enum {
     TYPE2_DOUBLE,
 };
 
-#define IS_ASSIGNABLE_ENTRY_CTOR(a, b) \
-    { a, b }
+#define IS_ASSIGNABLE_ENTRY_CTOR(a, b) {a, b}
 #define IS_ASSIGNABLE_ENTRY(a, ...) DEF_BINARY_RELATION_ENTRY_SEP_COMMA(1, IS_ASSIGNABLE_ENTRY_CTOR, a, ##__VA_ARGS__)
 #define IS_ASSIGNABLE_ENTRY_R(a, ...) DEF_BINARY_RELATION_ENTRY_SEP_COMMA(0, IS_ASSIGNABLE_ENTRY_CTOR, a, ##__VA_ARGS__)
 
@@ -269,6 +269,36 @@ constexpr bool is_binary_function = IsBinaryFunction<T1, T2, T3>::value;
 
 IS_BINARY_FUNCTION(0, int, int, float, double, int8_t, int16_t);
 IS_BINARY_FUNCTION(1, int, int, float, double, int8_t);
+
+enum EnumA { A1, A2, A3, A4, A5, A6, A7, A8, A9, A10 };
+
+enum EnumB { B1, B2, B3, B4, B5, B6, B7, B8, B9, B10 };
+
+VALUE_GUARD(EnumA, EnumFromA1ToA3Guard, is_from_a1_to_a3, A1, A2, A3);
+VALUE_GUARD(EnumB, EnumFromB1ToB3Guard, is_from_b1_to_b3, B1, B2, B3);
+
+template <EnumA A, EnumB B, typename = guard::Guard , typename = guard::Guard>
+bool constexpr is_legal = static_cast<int>(A)%3==static_cast<int>(B)%3;
+
+template <EnumA A, EnumB B>
+bool constexpr is_legal<A, B, EnumFromA1ToA3Guard<A>, EnumFromB1ToB3Guard<B>> = true;
+
+template <EnumA A, EnumB B>
+bool constexpr is_legal<A, B, EnumFromA1ToA3Guard<A>, void> = false;
+
+template <EnumA A, EnumB B>
+bool constexpr is_legal<A, B, void, EnumFromB1ToB3Guard<B>> = false;
+
+TEST_F(MetaMacroTest, test_ternary_constexpr) {
+    static_assert(!is_binary_function<int, int16_t, int>);
+
+    static_assert(is_legal<A1, B1>);
+    static_assert(is_legal<A2, B2>);
+    static_assert(is_legal<A3, B3>);
+
+    static_assert(is_legal<A1, B2>);
+
+
 } // namespace test
 
 int main(int argc, char** argv) {

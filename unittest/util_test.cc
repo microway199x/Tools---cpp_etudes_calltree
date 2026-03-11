@@ -140,6 +140,31 @@ TEST_F(TestUtil, TestUnsignedIntegerOverflow) {
     int32_t c = a;
     int64_t b = c;
     std::cout << b << std::endl;
+    std::shared_ptr<std::string> s = std::make_shared<std::string>("");
+    std::shared_ptr<std::string> s1 = std::make_shared<std::string>("");
+    s = s1;
+
+}
+class ABC {
+public:
+    explicit ABC(int a):a(a) {
+        std::cout << "ABC ctor" << std::endl;
+        if (a==1){
+            throw std::bad_alloc();
+        }
+    }
+    ~ABC() { std::cout << "ABC dtor" << std::endl; }
+private:
+    int a;
+};
+TEST_F(TestUtil, testABC) {
+    std::shared_ptr<ABC> a = std::make_shared<ABC>(0);
+    try {
+        a = std::make_shared<ABC>(1);
+    } catch(const std::bad_alloc& e) {
+        std::cout << "catch bad_alloc" << std::endl;
+    }
+    ASSERT_TRUE(a==nullptr);
 }
 
 TEST_F(TestUtil, TestListTransform) {
@@ -268,6 +293,27 @@ void f(std::function<void()> cb) {
 TEST_F(TestUtil, testF) {
 
 }
+
+TEST_F(TestUtil, testAbc){
+    absl::flat_hash_map<int, int> m;
+    m[1]=0;
+    m[2]=0;
+    auto it = m.find(1);
+    if (it!=m.end()) {
+        ++it->second;
+    }
+    for(auto it=m.begin(); it!=m.end(); ++it) {
+        std::cout<<"it->first="<<it->first<<", it->second="<<it->second<<std::endl;
+    }
+}
+
+struct Good : std::enable_shared_from_this<Good> // note: public inheritance
+{
+    std::shared_ptr<Good> getptr() {
+        return shared_from_this();
+    }
+};
+
 
 } // namespace util
 } // namespace grakra
